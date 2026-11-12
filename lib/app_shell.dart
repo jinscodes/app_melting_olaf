@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'models/sensor_data.dart';
 import 'services/temperature_service.dart';
+import 'services/notification_service.dart';
 import 'pages/home_page.dart';
 import 'pages/menu_page.dart';
 
@@ -16,6 +17,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   final TemperatureService service = TemperatureService();
+  final NotificationService notifications = NotificationService.instance;
 
   int selectedTab = 0;
   int modeVersion = 0;
@@ -24,7 +26,7 @@ class _AppShellState extends State<AppShell> {
   bool demoMode = false;
   bool connected = false;
   bool loading = false;
-  bool warningShown = false;
+  FreezeRiskLevel notifiedRisk = FreezeRiskLevel.safe;
 
   String? error;
   SensorSnapshot? latest;
@@ -39,6 +41,7 @@ class _AppShellState extends State<AppShell> {
   void initState() {
     super.initState();
 
+    unawaited(notifications.initialize());
     loadData();
 
     timer = Timer.periodic(const Duration(seconds: 1), (_) => loadData());
@@ -112,17 +115,12 @@ class _AppShellState extends State<AppShell> {
         }
       });
 
-      if (data.anyDanger && !warningShown) {
-        warningShown = true;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('동파 위험! 센서 상태를 확인하세요.'),
-            backgroundColor: Color(0xFF6F5149),
-          ),
-        );
-      } else if (!data.anyDanger) {
-        warningShown = false;
+      final risk = data.freezeRisk;
+      if (risk.index > notifiedRisk.index) {
+        notifiedRisk = risk;
+        _showRiskAlarm(risk);
+      } else if (risk.index < notifiedRisk.index) {
+        notifiedRisk = risk;
       }
     } catch (e) {
       if (!mounted || currentVersion != modeVersion) {
@@ -138,6 +136,45 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
+  void _showRiskAlarm(FreezeRiskLevel risk) {
+    if (risk == FreezeRiskLevel.safe) return;
+    unawaited(notifications.showRisk(risk));
+    final (message, color, icon) = switch (risk) {
+      FreezeRiskLevel.caution => (
+        '1단계 조심: 배관 온도가 낮아지고 있어요. 보온 상태를 확인하세요.',
+        const Color(0xFFF2A900),
+        Icons.info_outline,
+      ),
+      FreezeRiskLevel.warning => (
+        '2단계 주의: 동파 가능성이 높아지고 있어요. 예방 조치를 시작하세요.',
+        const Color(0xFFE66A00),
+        Icons.warning_amber_rounded,
+      ),
+      FreezeRiskLevel.danger => (
+        '3단계 위험: 동파 위험이 임박했어요. 즉시 배관을 확인하세요.',
+        const Color(0xFFC62828),
+        Icons.crisis_alert,
+      ),
+      FreezeRiskLevel.safe => throw StateError('안전 단계에는 알람이 없습니다.'),
+    };
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(icon, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(child: Text(message)),
+            ],
+          ),
+          backgroundColor: color,
+          duration: const Duration(seconds: 6),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
   void changeMode(bool value) {
     setState(() {
       modeVersion++;
@@ -148,7 +185,7 @@ class _AppShellState extends State<AppShell> {
       latest = null;
       lastUpdated = null;
       lastSequence = null;
-      warningShown = false;
+      notifiedRisk = FreezeRiskLevel.safe;
 
       history1.clear();
       history2.clear();
@@ -170,7 +207,7 @@ class _AppShellState extends State<AppShell> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Pipe guard',
+          'Melting Olaf',
           style: TextStyle(fontWeight: FontWeight.w600, letterSpacing: -0.2),
         ),
         centerTitle: false,

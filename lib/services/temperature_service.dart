@@ -57,12 +57,7 @@ class TemperatureService {
           : null;
       final danger =
           temperature != null &&
-          (temperature <= 2 ||
-              (temperature <= 12 &&
-                  slope != null &&
-                  slope <= -0.3 &&
-                  eta != null &&
-                  eta <= 15));
+          (temperature <= 1 || (eta != null && eta <= 10));
       return SensorData(
         ok: temperature != null,
         temperature: temperature,
@@ -117,21 +112,9 @@ class TemperatureService {
         ? (temp2 - 2) / -slope2
         : null;
 
-    final danger1 =
-        temp1 <= 2 ||
-        (temp1 <= 12 &&
-            slope1 != null &&
-            slope1 <= -0.3 &&
-            eta1 != null &&
-            eta1 <= 15);
+    final danger1 = temp1 <= 1 || (eta1 != null && eta1 <= 10);
 
-    final danger2 =
-        temp2 <= 2 ||
-        (temp2 <= 12 &&
-            slope2 != null &&
-            slope2 <= -0.3 &&
-            eta2 != null &&
-            eta2 <= 15);
+    final danger2 = temp2 <= 1 || (eta2 != null && eta2 <= 10);
 
     return SensorSnapshot(
       sensor1: SensorData(

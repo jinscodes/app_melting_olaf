@@ -23,7 +23,7 @@ void main() {
   testWidgets('앱 기본 화면을 표시한다', (tester) async {
     await tester.pumpWidget(const TempAlertApp());
 
-    expect(find.text('Pipe guard'), findsOneWidget);
+    expect(find.text('Melting Olaf'), findsOneWidget);
     expect(find.text('배관 상태'), findsOneWidget);
   });
 }

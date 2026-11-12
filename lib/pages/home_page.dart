@@ -28,24 +28,34 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final danger = connected && (data?.anyDanger ?? false);
+    final risk = connected
+        ? data?.freezeRisk ?? FreezeRiskLevel.safe
+        : FreezeRiskLevel.safe;
     final sensorError = connected && (data?.anySensorError ?? false);
     final title = !connected
         ? '연결 확인 중'
-        : danger
-        ? '주의가 필요해요'
+        : risk != FreezeRiskLevel.safe
+        ? risk.label
         : sensorError
         ? '센서를 확인하세요'
         : '현재 안전해요';
     final description = !connected
         ? 'Supabase에서 최근 측정값을 불러오고 있습니다.'
-        : danger
-        ? '온도가 빠르게 낮아지고 있습니다.'
+        : risk == FreezeRiskLevel.danger
+        ? '동파 위험이 임박했습니다. 즉시 배관을 확인하세요.'
+        : risk == FreezeRiskLevel.warning
+        ? '동파 가능성이 높아지고 있습니다. 예방 조치를 시작하세요.'
+        : risk == FreezeRiskLevel.caution
+        ? '배관 온도가 낮아지고 있습니다. 보온 상태를 확인하세요.'
         : sensorError
         ? '일부 센서의 값이 비어 있습니다.'
         : '동파 위험 신호가 감지되지 않았습니다.';
-    final accent = danger
-        ? const Color(0xFF76554D)
+    final accent = risk == FreezeRiskLevel.danger
+        ? const Color(0xFFC62828)
+        : risk == FreezeRiskLevel.warning
+        ? const Color(0xFFE66A00)
+        : risk == FreezeRiskLevel.caution
+        ? const Color(0xFFF2A900)
         : sensorError
         ? const Color(0xFF746A52)
         : const Color(0xFF586159);
