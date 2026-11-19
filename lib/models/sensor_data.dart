@@ -13,11 +13,11 @@ enum FreezeRiskLevel {
   danger;
 
   String get label => switch (this) {
-    safe => '안전',
-    caution => '1단계 · 조심',
-    warning => '2단계 · 주의',
-    danger => '3단계 · 위험',
-  };
+        safe => 'No alert',
+        caution => 'Level 1 · Caution',
+        warning => 'Level 2 · Warning',
+        danger => 'Level 3 · Urgent',
+      };
 }
 
 class SensorData {
@@ -75,8 +75,8 @@ class SensorSnapshot {
 
   FreezeRiskLevel get freezeRisk =>
       sensor1.freezeRisk.index >= sensor2.freezeRisk.index
-      ? sensor1.freezeRisk
-      : sensor2.freezeRisk;
+          ? sensor1.freezeRisk
+          : sensor2.freezeRisk;
 
   bool get anySensorError => !sensor1.ok || !sensor2.ok;
 
@@ -99,9 +99,8 @@ class SensorSnapshot {
         etaMinutes: parseNumber(json['etaMinutes2']),
         danger: json['danger2'] == true,
       ),
-      sequence: json['sequence'] is num
-          ? (json['sequence'] as num).toInt()
-          : null,
+      sequence:
+          json['sequence'] is num ? (json['sequence'] as num).toInt() : null,
       measuredAt: DateTime.tryParse(json['measuredAt']?.toString() ?? ''),
     );
   }

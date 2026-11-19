@@ -20,10 +20,10 @@ void main() {
     );
   });
 
-  testWidgets('앱 기본 화면을 표시한다', (tester) async {
+  testWidgets('displays the English app shell', (tester) async {
     await tester.pumpWidget(const TempAlertApp());
 
     expect(find.text('Melting Olaf'), findsOneWidget);
-    expect(find.text('배관 상태'), findsOneWidget);
+    expect(find.text('Overview'), findsWidgets);
   });
 }

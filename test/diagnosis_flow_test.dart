@@ -12,21 +12,25 @@ void main() {
     final c = DiagnosisController();
     await tester.pumpWidget(
         MaterialApp(home: Scaffold(body: DiagnosisPage(controller: c))));
-    final start = find.text('데모 검사 시작');
+    final start = find.text('Start demo scan');
     await tester.ensureVisible(start);
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(start);
     await tester.pumpAndSettle();
-    final baseline = find.text('기준온도 기록 · 데모');
+    final baseline = find.text('Record baseline');
     await tester.ensureVisible(baseline);
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(baseline);
     await tester.pumpAndSettle();
-    final cooling = find.text('열선 제거 · 냉각 측정 시작');
+    final cooling = find.text('Heater removed · Start cooling');
     await tester.ensureVisible(cooling);
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(cooling);
     await tester.pump(const Duration(seconds: 1));
     expect(c.elapsed, 18);
-    final cancel = find.text('검사 취소');
+    final cancel = find.text('Cancel scan');
     await tester.ensureVisible(cancel);
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(cancel);
     await tester.pump(const Duration(seconds: 3));
     expect(c.stage, DiagnosisStage.idle);
@@ -56,13 +60,14 @@ void main() {
       final c = DiagnosisController()..configure(result: outcome);
       await tester.pumpWidget(
           MaterialApp(home: Scaffold(body: DiagnosisPage(controller: c))));
-      expect(find.textContaining('실제 센서 기록이나 AI 분석 결과가 아닙니다'), findsOneWidget);
+      expect(find.textContaining('Simulated data · AI not connected'),
+          findsOneWidget);
       c.start();
       await tester.pump();
-      expect(find.text('가열 전 기준온도 기록'), findsOneWidget);
+      expect(find.text('Record a baseline'), findsOneWidget);
       c.recordBaseline();
       await tester.pump();
-      expect(find.text('열선 제거 · 냉각 측정 시작'), findsOneWidget);
+      expect(find.text('Heater removed · Start cooling'), findsOneWidget);
       c.startCooling();
       await tester.pump(const Duration(seconds: 10));
       expect(c.stage, DiagnosisStage.analyzing);

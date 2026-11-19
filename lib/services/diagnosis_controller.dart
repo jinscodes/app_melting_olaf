@@ -22,10 +22,10 @@ class DiagnosisResult {
   final DateTime completedAt;
   final DemoOutcome outcome;
   String get title => switch (outcome) {
-        DemoOutcome.sensorA => '센서 A 구간이 상대적으로 취약해요',
-        DemoOutcome.sensorB => '센서 B 구간이 상대적으로 취약해요',
-        DemoOutcome.indeterminate => '취약 구간 판정 보류',
-        DemoOutcome.failure => '분석을 완료하지 못했어요',
+        DemoOutcome.sensorA => 'Sensor A is relatively more vulnerable',
+        DemoOutcome.sensorB => 'Sensor B is relatively more vulnerable',
+        DemoOutcome.indeterminate => 'No clear difference',
+        DemoOutcome.failure => 'Analysis could not be completed',
       };
   double get scoreA => outcome == DemoOutcome.sensorA
       ? 0.81

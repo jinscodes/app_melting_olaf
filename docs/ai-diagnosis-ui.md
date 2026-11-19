@@ -20,3 +20,7 @@ The UI always identifies simulated data. Model scores are examples, not freeze p
 - Model and preprocessing versions, completion time and failure reason.
 
 Future integration must validate input and reject stale results belonging to a previous experiment. A failed or cancelled attempt must not replace the last completed result. Preserve explicit result timestamps and distinguish monitoring alerts from inspection results. Remove the preview label only when the real adapter is connected and tested. Real sensor collection, persistence, push alerts while the app is stopped, and model validation are outside this UI implementation.
+
+## English interface and visual design
+All product screens, tabs, status labels, errors, and notifications use US English. A shared iOS-inspired theme provides grouped white cards, system-blue controls, Cupertino tabs and switches, and consistent sensor A/B names. Temperatures remain explicitly in Celsius; alert thresholds are unchanged. Overview marks readings older than 15 seconds as paused. Preview settings are in a disclosure section. Responsive and English-copy checks cover 320- and 390-pixel layouts; optional UI_PREVIEW_DIR captures rendered previews using locally loaded test fonts on Windows.
+

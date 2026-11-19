@@ -27,13 +27,11 @@ class NotificationService {
 
       await _plugin
           .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >()
+              AndroidFlutterLocalNotificationsPlugin>()
           ?.requestNotificationsPermission();
       await _plugin
           .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin
-          >()
+              IOSFlutterLocalNotificationsPlugin>()
           ?.requestPermissions(alert: true, badge: true, sound: true);
     } catch (_) {
       // Notifications are optional on unsupported platforms and in widget tests.
@@ -46,18 +44,19 @@ class NotificationService {
 
     final (title, body) = switch (risk) {
       FreezeRiskLevel.caution => (
-        '1단계 조심 · Melting Olaf',
-        '배관 온도가 낮아지고 있어요. 보온 상태를 확인하세요.',
-      ),
+          'Caution · Melting Olaf',
+          'Pipe temperature is falling. Check insulation.',
+        ),
       FreezeRiskLevel.warning => (
-        '2단계 주의 · Melting Olaf',
-        '동파 가능성이 높아지고 있어요. 예방 조치를 시작하세요.',
-      ),
+          'Warning · Melting Olaf',
+          'Low temperature or rapid cooling detected. Take preventive action.',
+        ),
       FreezeRiskLevel.danger => (
-        '3단계 위험 · Melting Olaf',
-        '동파 위험이 임박했어요. 즉시 배관을 확인하세요.',
-      ),
-      FreezeRiskLevel.safe => throw StateError('안전 단계에는 알림이 없습니다.'),
+          'Urgent · Melting Olaf',
+          'Temperature alert threshold reached. Check your pipe now.',
+        ),
+      FreezeRiskLevel.safe => throw StateError(
+          'No notification is needed when no threshold is triggered.'),
     };
 
     try {
@@ -68,8 +67,9 @@ class NotificationService {
         notificationDetails: const NotificationDetails(
           android: AndroidNotificationDetails(
             'freeze_risk_alerts',
-            '동파 위험 알림',
-            channelDescription: '배관의 동파 위험 단계가 올라갈 때 알려줍니다.',
+            'Temperature alerts',
+            channelDescription:
+                'Notifications when the pipe temperature alert level increases.',
             importance: Importance.max,
             priority: Priority.high,
             category: AndroidNotificationCategory.alarm,

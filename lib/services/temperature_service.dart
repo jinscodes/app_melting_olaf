@@ -6,7 +6,7 @@ import '../models/sensor_data.dart';
 
 class TemperatureService {
   TemperatureService({SupabaseClient? client})
-    : _client = client ?? Supabase.instance.client;
+      : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
@@ -25,7 +25,7 @@ class TemperatureService {
         .timeout(const Duration(seconds: 5));
 
     if (rows.isEmpty) {
-      throw StateError('저장된 온도 데이터가 없습니다.');
+      throw StateError('No temperature readings are available yet.');
     }
 
     final latest = rows.first;
@@ -53,10 +53,9 @@ class TemperatureService {
       final slope = slopeFor(key);
       final eta =
           temperature != null && slope != null && slope < 0 && temperature > 2
-          ? (temperature - 2) / -slope
-          : null;
-      final danger =
-          temperature != null &&
+              ? (temperature - 2) / -slope
+              : null;
+      final danger = temperature != null &&
           (temperature <= 1 || (eta != null && eta <= 10));
       return SensorData(
         ok: temperature != null,
@@ -104,13 +103,11 @@ class TemperatureService {
 
     final double? slope2 = step >= 5 && temp2 > -5 ? -1.35 : null;
 
-    final double? eta1 = slope1 != null && temp1 > 2
-        ? (temp1 - 2) / -slope1
-        : null;
+    final double? eta1 =
+        slope1 != null && temp1 > 2 ? (temp1 - 2) / -slope1 : null;
 
-    final double? eta2 = slope2 != null && temp2 > 2
-        ? (temp2 - 2) / -slope2
-        : null;
+    final double? eta2 =
+        slope2 != null && temp2 > 2 ? (temp2 - 2) / -slope2 : null;
 
     final danger1 = temp1 <= 1 || (eta1 != null && eta1 <= 10);
 

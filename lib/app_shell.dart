@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'ui/app_design.dart';
 
 import 'models/sensor_data.dart';
 import 'services/temperature_service.dart';
@@ -149,21 +151,22 @@ class _AppShellState extends State<AppShell> {
     unawaited(notifications.showRisk(risk));
     final (message, color, icon) = switch (risk) {
       FreezeRiskLevel.caution => (
-          '1단계 조심: 배관 온도가 낮아지고 있어요. 보온 상태를 확인하세요.',
+          'Caution: Pipe temperature is falling. Check insulation.',
           const Color(0xFFF2A900),
           Icons.info_outline,
         ),
       FreezeRiskLevel.warning => (
-          '2단계 주의: 동파 가능성이 높아지고 있어요. 예방 조치를 시작하세요.',
+          'Warning: Low temperature or rapid cooling detected. Take preventive action.',
           const Color(0xFFE66A00),
           Icons.warning_amber_rounded,
         ),
       FreezeRiskLevel.danger => (
-          '3단계 위험: 동파 위험이 임박했어요. 즉시 배관을 확인하세요.',
+          'Urgent: Temperature alert threshold reached. Check your pipe now.',
           const Color(0xFFC62828),
           Icons.crisis_alert,
         ),
-      FreezeRiskLevel.safe => throw StateError('안전 단계에는 알람이 없습니다.'),
+      FreezeRiskLevel.safe =>
+        throw StateError('No alarm is needed when no threshold is triggered.'),
     };
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -214,10 +217,11 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Melting Olaf',
-          style: TextStyle(fontWeight: FontWeight.w600, letterSpacing: -0.2),
-        ),
+        title: const Row(children: [
+          Icon(CupertinoIcons.drop_fill, size: 18, color: AppColors.blue),
+          SizedBox(width: 7),
+          Text('Melting Olaf'),
+        ]),
         centerTitle: false,
       ),
       body: SafeArea(
@@ -247,29 +251,24 @@ class _AppShellState extends State<AppShell> {
           ],
         ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedTab,
-        onDestinationSelected: (index) {
-          setState(() {
-            selectedTab = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: '홈',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.menu_rounded),
-            selectedIcon: Icon(Icons.sensors_rounded),
-            label: '모니터링',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.analytics_outlined),
-            selectedIcon: Icon(Icons.analytics),
-            label: 'AI 진단',
-          ),
+      bottomNavigationBar: CupertinoTabBar(
+        currentIndex: selectedTab,
+        onTap: (index) => setState(() => selectedTab = index),
+        activeColor: AppColors.blue,
+        inactiveColor: AppColors.secondary,
+        backgroundColor: const Color(0xF9FFFFFF),
+        border: const Border(
+            top: BorderSide(color: AppColors.separator, width: 0.5)),
+        height: 56,
+        items: const [
+          BottomNavigationBarItem(
+              icon: Icon(CupertinoIcons.house),
+              activeIcon: Icon(CupertinoIcons.house_fill),
+              label: 'Overview'),
+          BottomNavigationBarItem(
+              icon: Icon(CupertinoIcons.waveform_path), label: 'Live'),
+          BottomNavigationBarItem(
+              icon: Icon(CupertinoIcons.chart_bar_alt_fill), label: 'AI Scan'),
         ],
       ),
     );
