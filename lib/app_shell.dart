@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import 'ui/app_design.dart';
 
 import 'models/sensor_data.dart';
 import 'services/temperature_service.dart';
@@ -217,11 +215,10 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Row(children: [
-          Icon(CupertinoIcons.drop_fill, size: 18, color: AppColors.blue),
-          SizedBox(width: 7),
-          Text('Melting Olaf'),
-        ]),
+        title: const Text(
+          'Melting Olaf',
+          style: TextStyle(fontWeight: FontWeight.w600, letterSpacing: -0.2),
+        ),
         centerTitle: false,
       ),
       body: SafeArea(
@@ -251,24 +248,29 @@ class _AppShellState extends State<AppShell> {
           ],
         ),
       ),
-      bottomNavigationBar: CupertinoTabBar(
-        currentIndex: selectedTab,
-        onTap: (index) => setState(() => selectedTab = index),
-        activeColor: AppColors.blue,
-        inactiveColor: AppColors.secondary,
-        backgroundColor: const Color(0xF9FFFFFF),
-        border: const Border(
-            top: BorderSide(color: AppColors.separator, width: 0.5)),
-        height: 56,
-        items: const [
-          BottomNavigationBarItem(
-              icon: Icon(CupertinoIcons.house),
-              activeIcon: Icon(CupertinoIcons.house_fill),
-              label: 'Overview'),
-          BottomNavigationBarItem(
-              icon: Icon(CupertinoIcons.waveform_path), label: 'Live'),
-          BottomNavigationBarItem(
-              icon: Icon(CupertinoIcons.chart_bar_alt_fill), label: 'AI Scan'),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: selectedTab,
+        onDestinationSelected: (index) {
+          setState(() {
+            selectedTab = index;
+          });
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.menu_rounded),
+            selectedIcon: Icon(Icons.sensors_rounded),
+            label: 'Monitoring',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.analytics_outlined),
+            selectedIcon: Icon(Icons.analytics),
+            label: 'AI Scan',
+          ),
         ],
       ),
     );

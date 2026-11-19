@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,7 +20,8 @@ void main() {
         '.SF Pro Display',
         'CupertinoSystemText',
         'CupertinoSystemDisplay',
-        'Roboto'
+        'Roboto',
+        'sans-serif'
       ]) {
         final font = FontLoader(family)
           ..addFont(File(r'C:\Windows\Fonts\segoeui.ttf')
@@ -63,38 +63,37 @@ void main() {
       final boundaryKey = GlobalKey();
       Future<void> show(Widget page, String name) async {
         await tester.pumpWidget(MaterialApp(
-            locale: const Locale('en', 'US'),
-            theme: AppTheme.light,
-            home: RepaintBoundary(
-                key: boundaryKey,
-                child: Scaffold(
-                  appBar: AppBar(
-                      title: const Row(children: [
-                    Icon(CupertinoIcons.drop_fill,
-                        size: 18, color: AppColors.blue),
-                    SizedBox(width: 7),
-                    Text('Melting Olaf')
-                  ])),
-                  body: SafeArea(child: page),
-                  bottomNavigationBar: CupertinoTabBar(
-                      currentIndex: name == 'overview'
-                          ? 0
-                          : name == 'live-readings'
-                              ? 1
-                              : 2,
-                      activeColor: AppColors.blue,
-                      items: const [
-                        BottomNavigationBarItem(
-                            icon: Icon(CupertinoIcons.house),
-                            label: 'Overview'),
-                        BottomNavigationBarItem(
-                            icon: Icon(CupertinoIcons.waveform_path),
-                            label: 'Live'),
-                        BottomNavigationBarItem(
-                            icon: Icon(CupertinoIcons.chart_bar_alt_fill),
-                            label: 'AI Scan'),
-                      ]),
-                ))));
+          locale: const Locale('en', 'US'),
+          theme: AppTheme.light,
+          home: RepaintBoundary(
+              key: boundaryKey,
+              child: Scaffold(
+                appBar: AppBar(
+                    title: const Text('Melting Olaf'), centerTitle: false),
+                body: SafeArea(child: page),
+                bottomNavigationBar: NavigationBar(
+                  selectedIndex: name == 'overview'
+                      ? 0
+                      : name == 'live-readings'
+                          ? 1
+                          : 2,
+                  destinations: const [
+                    NavigationDestination(
+                        icon: Icon(Icons.home_outlined),
+                        selectedIcon: Icon(Icons.home),
+                        label: 'Home'),
+                    NavigationDestination(
+                        icon: Icon(Icons.menu_rounded),
+                        selectedIcon: Icon(Icons.sensors_rounded),
+                        label: 'Monitoring'),
+                    NavigationDestination(
+                        icon: Icon(Icons.analytics_outlined),
+                        selectedIcon: Icon(Icons.analytics),
+                        label: 'AI Scan'),
+                  ],
+                ),
+              )),
+        ));
         await tester.pump(const Duration(milliseconds: 300));
         expect(tester.takeException(), isNull, reason: name);
         final korean = RegExp(r'[\uAC00-\uD7AF]');
@@ -153,8 +152,8 @@ void main() {
       expect(controller.stage, DiagnosisStage.complete);
       await show(
           ListView(padding: const EdgeInsets.all(20), children: [
-            const PageHeading(
-                'Scan result', 'A closer look at the cooling response.'),
+            const Text('Scan result',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600)),
             DiagnosisResultCard(result: controller.latestResult)
           ]),
           'scan-result');

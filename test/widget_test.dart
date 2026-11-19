@@ -24,6 +24,6 @@ void main() {
     await tester.pumpWidget(const TempAlertApp());
 
     expect(find.text('Melting Olaf'), findsOneWidget);
-    expect(find.text('Overview'), findsWidgets);
+    expect(find.text('Pipe status'), findsWidgets);
   });
 }

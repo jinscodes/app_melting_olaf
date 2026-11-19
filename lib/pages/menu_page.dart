@@ -1,20 +1,20 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../models/sensor_data.dart';
-import '../ui/app_design.dart';
 import '../widgets/temperature_chart.dart';
 
 class MenuPage extends StatelessWidget {
-  const MenuPage(
-      {super.key,
-      required this.connected,
-      required this.demoMode,
-      required this.data,
-      required this.error,
-      required this.history1,
-      required this.history2,
-      required this.onModeChanged});
+  const MenuPage({
+    super.key,
+    required this.connected,
+    required this.demoMode,
+    required this.data,
+    required this.error,
+    required this.history1,
+    required this.history2,
+    required this.onModeChanged,
+  });
+
   final bool connected;
   final bool demoMode;
   final SensorSnapshot? data;
@@ -23,106 +23,145 @@ class MenuPage extends StatelessWidget {
   final List<TemperaturePoint> history2;
   final ValueChanged<bool> onModeChanged;
 
+  String _temperature(double? value) =>
+      value == null ? '--' : '${value.toStringAsFixed(1)}°';
+  String _slope(double? value) =>
+      value == null ? 'Calculating' : '${value.toStringAsFixed(2)} °C/min';
+
   @override
-  Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-        children: [
-          const PageHeading(
-              'Live readings', 'Two sensors. One complete picture.'),
-          Row(children: [
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+      children: [
+        Text(
+          'Monitoring',
+          style: Theme.of(context)
+              .textTheme
+              .headlineMedium
+              ?.copyWith(fontWeight: FontWeight.w600, letterSpacing: -1),
+        ),
+        const SizedBox(height: 8),
+        const Text('Recent temperatures and cooling rates',
+            style: TextStyle(color: Color(0xFF777872))),
+        const SizedBox(height: 24),
+        Row(
+          children: [
             Expanded(
-                child: _SensorCard(
-                    'Sensor A', data?.sensor1, connected, AppColors.blue)),
+              child: _SensorCard(
+                label: 'Sensor A',
+                sensor: data?.sensor1,
+                connected: connected,
+                temperature: _temperature,
+                slope: _slope,
+              ),
+            ),
             const SizedBox(width: 12),
             Expanded(
-                child: _SensorCard(
-                    'Sensor B', data?.sensor2, connected, AppColors.teal)),
-          ]),
-          const SectionCaption('Temperature history'),
-          Card(
-              child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: TemperatureChart(
-                      history1: history1, history2: history2))),
-          const SectionCaption('Data source'),
-          Card(
-              child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-                  child: Row(children: [
-                    const SymbolTile(CupertinoIcons.play_circle),
-                    const SizedBox(width: 12),
-                    Expanded(
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                          Text('Demo readings',
-                              style: Theme.of(context).textTheme.titleMedium),
-                          const SizedBox(height: 3),
-                          Text(
-                              demoMode
-                                  ? 'Simulated sensor data'
-                                  : 'Using connected sensors',
-                              style: Theme.of(context).textTheme.bodySmall),
-                        ])),
-                    const SizedBox(width: 8),
-                    CupertinoSwitch(
-                        value: demoMode,
-                        onChanged: onModeChanged,
-                        activeTrackColor: AppColors.blue),
-                  ]))),
-          const Padding(
-              padding: EdgeInsets.fromLTRB(4, 10, 4, 0),
-              child: Text(
-                  'Temperatures are shown in Celsius. Cooling rate is measured in °C per minute.',
-                  style: TextStyle(fontSize: 12, color: AppColors.secondary))),
-          if (error != null)
-            const Padding(
-                padding: EdgeInsets.only(top: 16),
-                child: Text(
-                    'Readings could not be refreshed. Check your connection.',
-                    style: TextStyle(color: AppColors.red))),
+              child: _SensorCard(
+                label: 'Sensor B',
+                sensor: data?.sensor2,
+                connected: connected,
+                temperature: _temperature,
+                slope: _slope,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 20, 18, 16),
+            child: TemperatureChart(history1: history1, history2: history2),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Card(
+          child: SwitchListTile.adaptive(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 4,
+            ),
+            title: const Text('Demo data'),
+            subtitle: Text(demoMode
+                ? 'Using simulated readings'
+                : 'Using live sensor readings'),
+            value: demoMode,
+            activeTrackColor: const Color(0xFF7A7D76),
+            onChanged: onModeChanged,
+          ),
+        ),
+        if (error != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            error!,
+            style: const TextStyle(color: Color(0xFF76554D), fontSize: 12),
+          ),
         ],
-      );
+      ],
+    );
+  }
 }
 
 class _SensorCard extends StatelessWidget {
-  const _SensorCard(this.label, this.sensor, this.connected, this.color);
+  const _SensorCard({
+    required this.label,
+    required this.sensor,
+    required this.connected,
+    required this.temperature,
+    required this.slope,
+  });
+
   final String label;
   final SensorData? sensor;
   final bool connected;
-  final Color color;
+  final String Function(double?) temperature;
+  final String Function(double?) slope;
+
   @override
   Widget build(BuildContext context) {
     final ok = connected && sensor?.ok == true;
     return Card(
-        child: Padding(
-            padding: const EdgeInsets.all(18),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Icon(CupertinoIcons.thermometer, size: 21, color: color),
-              const SizedBox(height: 14),
-              Text(label, style: Theme.of(context).textTheme.bodyMedium),
-              const SizedBox(height: 8),
-              FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
                   child: Text(
-                      ok ? '${sensor!.temperature!.toStringAsFixed(1)}°C' : '—',
-                      style: const TextStyle(
-                          color: AppColors.ink,
-                          fontSize: 32,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -1.2))),
-              const SizedBox(height: 8),
-              Text(
-                  !ok
-                      ? 'No data'
-                      : sensor?.slope == null
-                          ? 'Calculating rate…'
-                          : '${sensor!.slope!.toStringAsFixed(2)} °C/min',
-                  style: TextStyle(
-                      fontSize: 12, color: ok ? color : AppColors.secondary)),
-            ])));
+                    label,
+                    style: const TextStyle(color: Color(0xFF777872)),
+                  ),
+                ),
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color:
+                        ok ? const Color(0xFF626A63) : const Color(0xFF8A756F),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 22),
+            Text(
+              ok ? temperature(sensor?.temperature) : '--',
+              style: const TextStyle(
+                fontSize: 31,
+                fontWeight: FontWeight.w500,
+                letterSpacing: -1.2,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              ok ? slope(sensor?.slope) : 'No data',
+              style: const TextStyle(fontSize: 12, color: Color(0xFF858680)),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
