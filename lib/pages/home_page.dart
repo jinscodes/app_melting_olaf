@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../models/sensor_data.dart';
+import '../services/diagnosis_controller.dart';
+import 'diagnosis_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({
@@ -11,6 +13,8 @@ class HomePage extends StatelessWidget {
     required this.lastUpdated,
     required this.error,
     required this.onOpenMenu,
+    this.diagnosisResult,
+    this.onOpenDiagnosis,
   });
 
   final bool connected;
@@ -19,6 +23,8 @@ class HomePage extends StatelessWidget {
   final DateTime? lastUpdated;
   final String? error;
   final VoidCallback onOpenMenu;
+  final DiagnosisResult? diagnosisResult;
+  final VoidCallback? onOpenDiagnosis;
 
   String _time(DateTime? value) {
     if (value == null) return '기록 없음';
@@ -35,37 +41,39 @@ class HomePage extends StatelessWidget {
     final title = !connected
         ? '연결 확인 중'
         : risk != FreezeRiskLevel.safe
-        ? risk.label
-        : sensorError
-        ? '센서를 확인하세요'
-        : '현재 안전해요';
+            ? risk.label
+            : sensorError
+                ? '센서를 확인하세요'
+                : '현재 저온 경고 없음';
     final description = !connected
         ? 'Supabase에서 최근 측정값을 불러오고 있습니다.'
         : risk == FreezeRiskLevel.danger
-        ? '동파 위험이 임박했습니다. 즉시 배관을 확인하세요.'
-        : risk == FreezeRiskLevel.warning
-        ? '동파 가능성이 높아지고 있습니다. 예방 조치를 시작하세요.'
-        : risk == FreezeRiskLevel.caution
-        ? '배관 온도가 낮아지고 있습니다. 보온 상태를 확인하세요.'
-        : sensorError
-        ? '일부 센서의 값이 비어 있습니다.'
-        : '동파 위험 신호가 감지되지 않았습니다.';
+            ? '동파 위험이 임박했습니다. 즉시 배관을 확인하세요.'
+            : risk == FreezeRiskLevel.warning
+                ? '동파 가능성이 높아지고 있습니다. 예방 조치를 시작하세요.'
+                : risk == FreezeRiskLevel.caution
+                    ? '배관 온도가 낮아지고 있습니다. 보온 상태를 확인하세요.'
+                    : sensorError
+                        ? '일부 센서의 값이 비어 있습니다.'
+                        : '동파 위험 신호가 감지되지 않았습니다.';
     final accent = risk == FreezeRiskLevel.danger
         ? const Color(0xFFC62828)
         : risk == FreezeRiskLevel.warning
-        ? const Color(0xFFE66A00)
-        : risk == FreezeRiskLevel.caution
-        ? const Color(0xFFF2A900)
-        : sensorError
-        ? const Color(0xFF746A52)
-        : const Color(0xFF586159);
+            ? const Color(0xFFE66A00)
+            : risk == FreezeRiskLevel.caution
+                ? const Color(0xFFF2A900)
+                : sensorError
+                    ? const Color(0xFF746A52)
+                    : const Color(0xFF586159);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
       children: [
         Text(
           '배관 상태',
-          style: Theme.of(context).textTheme.headlineMedium
+          style: Theme.of(context)
+              .textTheme
+              .headlineMedium
               ?.copyWith(fontWeight: FontWeight.w600, letterSpacing: -1),
         ),
         const SizedBox(height: 8),
@@ -124,6 +132,8 @@ class HomePage extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 14),
+        DiagnosisResultCard(result: diagnosisResult, onOpen: onOpenDiagnosis),
         if (error != null) ...[
           const SizedBox(height: 14),
           Text(
@@ -156,14 +166,15 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 15),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(label, style: const TextStyle(color: Color(0xFF777872))),
+        padding: const EdgeInsets.symmetric(vertical: 15),
+        child: Row(
+          children: [
+            Expanded(
+              child:
+                  Text(label, style: const TextStyle(color: Color(0xFF777872))),
+            ),
+            Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+          ],
         ),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
-      ],
-    ),
-  );
+      );
 }

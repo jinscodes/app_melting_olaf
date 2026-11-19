@@ -7,6 +7,8 @@ import 'services/temperature_service.dart';
 import 'services/notification_service.dart';
 import 'pages/home_page.dart';
 import 'pages/menu_page.dart';
+import 'pages/diagnosis_page.dart';
+import 'services/diagnosis_controller.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -18,6 +20,8 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   final TemperatureService service = TemperatureService();
   final NotificationService notifications = NotificationService.instance;
+
+  final diagnosis = DiagnosisController();
 
   int selectedTab = 0;
   int modeVersion = 0;
@@ -42,9 +46,14 @@ class _AppShellState extends State<AppShell> {
     super.initState();
 
     unawaited(notifications.initialize());
+    diagnosis.addListener(_diagnosisChanged);
     loadData();
 
     timer = Timer.periodic(const Duration(seconds: 1), (_) => loadData());
+  }
+
+  void _diagnosisChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> loadData() async {
@@ -54,12 +63,10 @@ class _AppShellState extends State<AppShell> {
     final currentVersion = modeVersion;
 
     try {
-      final TemperatureBatch? batch = demoMode
-          ? null
-          : await service.fetchLatestData();
-      final SensorSnapshot data = demoMode
-          ? service.createDemoData()
-          : batch!.latest;
+      final TemperatureBatch? batch =
+          demoMode ? null : await service.fetchLatestData();
+      final SensorSnapshot data =
+          demoMode ? service.createDemoData() : batch!.latest;
 
       if (!mounted || currentVersion != modeVersion) {
         return;
@@ -71,6 +78,7 @@ class _AppShellState extends State<AppShell> {
         connected = true;
         error = null;
         latest = data;
+        lastUpdated = data.measuredAt;
 
         final isNew = data.sequence == null || data.sequence != lastSequence;
 
@@ -141,20 +149,20 @@ class _AppShellState extends State<AppShell> {
     unawaited(notifications.showRisk(risk));
     final (message, color, icon) = switch (risk) {
       FreezeRiskLevel.caution => (
-        '1단계 조심: 배관 온도가 낮아지고 있어요. 보온 상태를 확인하세요.',
-        const Color(0xFFF2A900),
-        Icons.info_outline,
-      ),
+          '1단계 조심: 배관 온도가 낮아지고 있어요. 보온 상태를 확인하세요.',
+          const Color(0xFFF2A900),
+          Icons.info_outline,
+        ),
       FreezeRiskLevel.warning => (
-        '2단계 주의: 동파 가능성이 높아지고 있어요. 예방 조치를 시작하세요.',
-        const Color(0xFFE66A00),
-        Icons.warning_amber_rounded,
-      ),
+          '2단계 주의: 동파 가능성이 높아지고 있어요. 예방 조치를 시작하세요.',
+          const Color(0xFFE66A00),
+          Icons.warning_amber_rounded,
+        ),
       FreezeRiskLevel.danger => (
-        '3단계 위험: 동파 위험이 임박했어요. 즉시 배관을 확인하세요.',
-        const Color(0xFFC62828),
-        Icons.crisis_alert,
-      ),
+          '3단계 위험: 동파 위험이 임박했어요. 즉시 배관을 확인하세요.',
+          const Color(0xFFC62828),
+          Icons.crisis_alert,
+        ),
       FreezeRiskLevel.safe => throw StateError('안전 단계에는 알람이 없습니다.'),
     };
     ScaffoldMessenger.of(context)
@@ -212,7 +220,6 @@ class _AppShellState extends State<AppShell> {
         ),
         centerTitle: false,
       ),
-
       body: SafeArea(
         child: IndexedStack(
           index: selectedTab,
@@ -224,8 +231,9 @@ class _AppShellState extends State<AppShell> {
               lastUpdated: lastUpdated,
               error: error,
               onOpenMenu: openMenu,
+              diagnosisResult: diagnosis.latestResult,
+              onOpenDiagnosis: () => setState(() => selectedTab = 2),
             ),
-
             MenuPage(
               connected: connected,
               demoMode: demoMode,
@@ -235,10 +243,10 @@ class _AppShellState extends State<AppShell> {
               history2: history2,
               onModeChanged: changeMode,
             ),
+            DiagnosisPage(controller: diagnosis),
           ],
         ),
       ),
-
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedTab,
         onDestinationSelected: (index) {
@@ -257,6 +265,11 @@ class _AppShellState extends State<AppShell> {
             selectedIcon: Icon(Icons.sensors_rounded),
             label: '모니터링',
           ),
+          NavigationDestination(
+            icon: Icon(Icons.analytics_outlined),
+            selectedIcon: Icon(Icons.analytics),
+            label: 'AI 진단',
+          ),
         ],
       ),
     );
@@ -264,6 +277,8 @@ class _AppShellState extends State<AppShell> {
 
   @override
   void dispose() {
+    diagnosis.removeListener(_diagnosisChanged);
+    diagnosis.dispose();
     timer?.cancel();
     super.dispose();
   }
