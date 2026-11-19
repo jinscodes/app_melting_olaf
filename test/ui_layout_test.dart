@@ -129,6 +129,69 @@ void main() {
               onOpenMenu: () {},
               onOpenDiagnosis: () {}),
           'overview');
+      for (final temperature in [9.2, 2.8, 0.8]) {
+        final reading = SensorData(
+            ok: true,
+            temperature: temperature,
+            slope: -0.04,
+            etaMinutes: null,
+            danger: temperature <= 1);
+        final alert =
+            SensorSnapshot(sensor1: reading, sensor2: sensor, measuredAt: now);
+        await show(
+            HomePage(
+                connected: true,
+                demoMode: true,
+                data: alert,
+                lastUpdated: now,
+                error: null,
+                onOpenMenu: () {},
+                onOpenDiagnosis: () {}),
+            'alert-level-${alert.freezeRisk.index}');
+        expect(find.text(alert.freezeRisk.label), findsOneWidget);
+      }
+      final oldReading = SensorData(
+          ok: true,
+          temperature: 0.8,
+          slope: -0.04,
+          etaMinutes: null,
+          danger: true);
+      final oldSnapshot = SensorSnapshot(
+          sensor1: oldReading,
+          sensor2: sensor,
+          measuredAt: now.subtract(const Duration(minutes: 1)));
+      await show(
+          HomePage(
+              connected: true,
+              demoMode: false,
+              data: oldSnapshot,
+              lastUpdated: oldSnapshot.measuredAt,
+              error: null,
+              onOpenMenu: () {}),
+          'readings-paused');
+      expect(find.text('Readings paused'), findsOneWidget);
+      expect(
+          tester
+              .widget<Card>(
+                  find.byKey(const ValueKey('temperature-status-card')))
+              .color,
+          isNull);
+      await show(
+          HomePage(
+              connected: false,
+              demoMode: false,
+              data: oldSnapshot,
+              lastUpdated: oldSnapshot.measuredAt,
+              error: null,
+              onOpenMenu: () {}),
+          'readings-disconnected');
+      expect(find.text('Connecting'), findsOneWidget);
+      expect(
+          tester
+              .widget<Card>(
+                  find.byKey(const ValueKey('temperature-status-card')))
+              .color,
+          isNull);
       await show(
           MenuPage(
               connected: true,

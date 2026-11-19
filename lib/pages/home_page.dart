@@ -60,15 +60,24 @@ class HomePage extends StatelessWidget {
                         : sensorError
                             ? 'Some sensors are not reporting a valid temperature.'
                             : 'No temperature alert threshold has been triggered.';
-    final accent = risk == FreezeRiskLevel.danger
-        ? const Color(0xFFC62828)
-        : risk == FreezeRiskLevel.warning
-            ? const Color(0xFFE66A00)
-            : risk == FreezeRiskLevel.caution
-                ? const Color(0xFFF2A900)
-                : sensorError
-                    ? const Color(0xFF746A52)
-                    : const Color(0xFF586159);
+    // Only current, connected readings can color the temperature alert card.
+    final bannerRisk = connected && !stale ? risk : FreezeRiskLevel.safe;
+    final bannerColor = switch (bannerRisk) {
+      FreezeRiskLevel.caution => const Color(0xFFFFDA00),
+      FreezeRiskLevel.warning => const Color(0xFFFF8500),
+      FreezeRiskLevel.danger => const Color(0xFFE21B2D),
+      FreezeRiskLevel.safe => null,
+    };
+    final bannerText = bannerRisk == FreezeRiskLevel.danger
+        ? Colors.white
+        : const Color(0xFF242424);
+    final accent = switch (bannerRisk) {
+      FreezeRiskLevel.caution => const Color(0xFF715500),
+      FreezeRiskLevel.warning => const Color(0xFF663300),
+      FreezeRiskLevel.danger => Colors.white,
+      FreezeRiskLevel.safe =>
+        sensorError ? const Color(0xFF746A52) : const Color(0xFF586159),
+    };
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
@@ -87,6 +96,8 @@ class HomePage extends StatelessWidget {
         ),
         const SizedBox(height: 28),
         Card(
+          key: const ValueKey('temperature-status-card'),
+          color: bannerColor,
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -103,7 +114,8 @@ class HomePage extends StatelessWidget {
                 const SizedBox(height: 24),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
+                    color: bannerColor == null ? null : bannerText,
                     fontSize: 25,
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.8,
@@ -112,7 +124,14 @@ class HomePage extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   description,
-                  style: const TextStyle(color: Color(0xFF696A65), height: 1.5),
+                  style: TextStyle(
+                    color: bannerColor == null
+                        ? const Color(0xFF696A65)
+                        : bannerText,
+                    fontSize: bannerColor == null ? null : 13,
+                    fontWeight: bannerColor == null ? null : FontWeight.w500,
+                    height: bannerColor == null ? 1.5 : 1.65,
+                  ),
                 ),
               ],
             ),
