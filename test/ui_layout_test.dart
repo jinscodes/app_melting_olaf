@@ -72,11 +72,11 @@ void main() {
                     title: const Text('Melting Olaf'), centerTitle: false),
                 body: SafeArea(child: page),
                 bottomNavigationBar: NavigationBar(
-                  selectedIndex: name == 'overview'
-                      ? 0
-                      : name == 'live-readings'
-                          ? 1
-                          : 2,
+                  selectedIndex: name == 'live-readings'
+                      ? 1
+                      : name == 'thermal-scan' || name.startsWith('scan-')
+                          ? 2
+                          : 0,
                   destinations: const [
                     NavigationDestination(
                         icon: Icon(Icons.home_outlined),
