@@ -25,7 +25,7 @@ class TemperatureService {
         .timeout(const Duration(seconds: 5));
 
     if (rows.isEmpty) {
-      throw StateError('저장된 온도 데이터가 없습니다.');
+      throw StateError('No temperature readings are available yet.');
     }
 
     final latest = rows.first;
@@ -57,12 +57,7 @@ class TemperatureService {
           : null;
       final danger =
           temperature != null &&
-          (temperature <= 2 ||
-              (temperature <= 12 &&
-                  slope != null &&
-                  slope <= -0.3 &&
-                  eta != null &&
-                  eta <= 15));
+          (temperature <= 1 || (eta != null && eta <= 10));
       return SensorData(
         ok: temperature != null,
         temperature: temperature,
@@ -98,40 +93,30 @@ class TemperatureService {
   }
 
   // Simulated data for UI testing
-  SensorSnapshot createDemoData() {
+  SensorSnapshot createDemoData(DemoRiskScenario scenario) {
     final step = _demoStep++;
 
-    final temp1 = math.max(-5.0, 13.0 - step * 0.035);
+    // Presentation mode: begin safely, then reach the selected alert level in
+    // about 12 seconds. Values still pass through the production risk rules.
+    final progress = math.min(1.0, step / 12);
+    final (target1, target2, targetSlope) = switch (scenario) {
+      DemoRiskScenario.level1 => (9.8, 10.4, -0.03),
+      DemoRiskScenario.level2 => (2.8, 3.4, -0.05),
+      DemoRiskScenario.level3 => (0.8, 1.4, -0.12),
+    };
+    final temp1 = 13.0 + (target1 - 13.0) * progress;
+    final temp2 = 14.0 + (target2 - 14.0) * progress;
+    final double? slope1 = step < 2 ? null : targetSlope;
+    final double? slope2 = step < 2 ? null : targetSlope * 0.9;
 
-    final temp2 = math.max(-5.0, 14.0 - step * 0.045);
+    // The demo uses temperature/slope thresholds so ETA does not jump ahead
+    // to a more severe level before the selected scenario reaches its target.
+    const double? eta1 = null;
+    const double? eta2 = null;
 
-    final double? slope1 = step >= 5 && temp1 > -5 ? -1.05 : null;
+    final danger1 = temp1 <= 1 || (eta1 != null && eta1 <= 10);
 
-    final double? slope2 = step >= 5 && temp2 > -5 ? -1.35 : null;
-
-    final double? eta1 = slope1 != null && temp1 > 2
-        ? (temp1 - 2) / -slope1
-        : null;
-
-    final double? eta2 = slope2 != null && temp2 > 2
-        ? (temp2 - 2) / -slope2
-        : null;
-
-    final danger1 =
-        temp1 <= 2 ||
-        (temp1 <= 12 &&
-            slope1 != null &&
-            slope1 <= -0.3 &&
-            eta1 != null &&
-            eta1 <= 15);
-
-    final danger2 =
-        temp2 <= 2 ||
-        (temp2 <= 12 &&
-            slope2 != null &&
-            slope2 <= -0.3 &&
-            eta2 != null &&
-            eta2 <= 15);
+    final danger2 = temp2 <= 1 || (eta2 != null && eta2 <= 10);
 
     return SensorSnapshot(
       sensor1: SensorData(

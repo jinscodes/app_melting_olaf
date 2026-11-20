@@ -6,6 +6,38 @@ double? parseNumber(dynamic value) {
   return null;
 }
 
+enum FreezeRiskLevel {
+  safe,
+  caution,
+  warning,
+  danger;
+
+  String get label => switch (this) {
+    safe => 'No alert',
+    caution => 'Level 1 · Caution',
+    warning => 'Level 2 · Warning',
+    danger => 'Level 3 · Urgent',
+  };
+}
+
+enum DemoRiskScenario {
+  level1,
+  level2,
+  level3;
+
+  String get label => switch (this) {
+    level1 => 'Level 1',
+    level2 => 'Level 2',
+    level3 => 'Level 3',
+  };
+
+  String get description => switch (this) {
+    level1 => 'Caution',
+    level2 => 'Warning',
+    level3 => 'Urgent',
+  };
+}
+
 class SensorData {
   final bool ok;
   final double? temperature;
@@ -20,6 +52,26 @@ class SensorData {
     required this.etaMinutes,
     required this.danger,
   });
+
+  FreezeRiskLevel get freezeRisk {
+    if (!ok || temperature == null) return FreezeRiskLevel.safe;
+
+    final temp = temperature!;
+    final eta = etaMinutes;
+    if (temp <= 1 || (eta != null && eta <= 10)) {
+      return FreezeRiskLevel.danger;
+    }
+    if (temp <= 3 ||
+        (eta != null && eta <= 30) ||
+        (temp <= 8 && slope != null && slope! <= -0.1)) {
+      return FreezeRiskLevel.warning;
+    }
+    if ((temp <= 10 && slope != null && slope! <= -0.02) ||
+        (eta != null && eta <= 60)) {
+      return FreezeRiskLevel.caution;
+    }
+    return FreezeRiskLevel.safe;
+  }
 }
 
 class SensorSnapshot {
@@ -37,8 +89,12 @@ class SensorSnapshot {
 
   int get workingCount => (sensor1.ok ? 1 : 0) + (sensor2.ok ? 1 : 0);
 
-  bool get anyDanger =>
-      (sensor1.ok && sensor1.danger) || (sensor2.ok && sensor2.danger);
+  bool get anyDanger => freezeRisk == FreezeRiskLevel.danger;
+
+  FreezeRiskLevel get freezeRisk =>
+      sensor1.freezeRisk.index >= sensor2.freezeRisk.index
+      ? sensor1.freezeRisk
+      : sensor2.freezeRisk;
 
   bool get anySensorError => !sensor1.ok || !sensor2.ok;
 

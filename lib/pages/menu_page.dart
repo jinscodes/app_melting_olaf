@@ -13,6 +13,8 @@ class MenuPage extends StatelessWidget {
     required this.history1,
     required this.history2,
     required this.onModeChanged,
+    required this.demoScenario,
+    required this.onDemoScenarioChanged,
   });
 
   final bool connected;
@@ -22,11 +24,13 @@ class MenuPage extends StatelessWidget {
   final List<TemperaturePoint> history1;
   final List<TemperaturePoint> history2;
   final ValueChanged<bool> onModeChanged;
+  final DemoRiskScenario demoScenario;
+  final ValueChanged<DemoRiskScenario> onDemoScenarioChanged;
 
   String _temperature(double? value) =>
       value == null ? '--' : '${value.toStringAsFixed(1)}°';
   String _slope(double? value) =>
-      value == null ? '계산 중' : '${value.toStringAsFixed(2)} °C/min';
+      value == null ? 'Calculating' : '${value.toStringAsFixed(2)} °C/min';
 
   @override
   Widget build(BuildContext context) {
@@ -34,18 +38,21 @@ class MenuPage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
       children: [
         Text(
-          '모니터링',
+          'Monitoring',
           style: Theme.of(context).textTheme.headlineMedium
               ?.copyWith(fontWeight: FontWeight.w600, letterSpacing: -1),
         ),
         const SizedBox(height: 8),
-        const Text('최근 온도와 변화 속도', style: TextStyle(color: Color(0xFF777872))),
+        const Text(
+          'Recent temperatures and cooling rates',
+          style: TextStyle(color: Color(0xFF777872)),
+        ),
         const SizedBox(height: 24),
         Row(
           children: [
             Expanded(
               child: _SensorCard(
-                label: '센서 1',
+                label: 'Sensor A',
                 sensor: data?.sensor1,
                 connected: connected,
                 temperature: _temperature,
@@ -55,7 +62,7 @@ class MenuPage extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: _SensorCard(
-                label: '센서 2',
+                label: 'Sensor B',
                 sensor: data?.sensor2,
                 connected: connected,
                 temperature: _temperature,
@@ -78,13 +85,61 @@ class MenuPage extends StatelessWidget {
               horizontal: 18,
               vertical: 4,
             ),
-            title: const Text('데모 데이터'),
-            subtitle: Text(demoMode ? '가상 측정값 사용 중' : 'Supabase 데이터 사용 중'),
+            title: const Text('Demo scan'),
+            subtitle: Text(
+              demoMode
+                  ? 'Presentation mode · selected alert in about 12 seconds'
+                  : 'Using live sensor readings',
+            ),
             value: demoMode,
             activeTrackColor: const Color(0xFF7A7D76),
             onChanged: onModeChanged,
           ),
         ),
+        if (demoMode) ...[
+          const SizedBox(height: 14),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Choose demo alert',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Each scenario finishes in under one minute.',
+                    style: TextStyle(color: Color(0xFF777872), fontSize: 12),
+                  ),
+                  const SizedBox(height: 14),
+                  SegmentedButton<DemoRiskScenario>(
+                    segments: [
+                      for (final scenario in DemoRiskScenario.values)
+                        ButtonSegment(
+                          value: scenario,
+                          label: Text(scenario.label),
+                          tooltip:
+                              '${scenario.label} · ${scenario.description}',
+                        ),
+                    ],
+                    selected: {demoScenario},
+                    showSelectedIcon: false,
+                    onSelectionChanged: (selection) =>
+                        onDemoScenarioChanged(selection.first),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '${demoScenario.label} · ${demoScenario.description}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
         if (error != null) ...[
           const SizedBox(height: 12),
           Text(
@@ -152,7 +207,7 @@ class _SensorCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              ok ? slope(sensor?.slope) : '데이터 없음',
+              ok ? slope(sensor?.slope) : 'No data',
               style: const TextStyle(fontSize: 12, color: Color(0xFF858680)),
             ),
           ],

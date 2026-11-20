@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../models/sensor_data.dart';
+import '../services/diagnosis_controller.dart';
+import 'diagnosis_page.dart';
+import '../ui/app_design.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({
@@ -11,6 +14,8 @@ class HomePage extends StatelessWidget {
     required this.lastUpdated,
     required this.error,
     required this.onOpenMenu,
+    this.diagnosisResult,
+    this.onOpenDiagnosis,
   });
 
   final bool connected;
@@ -19,52 +24,80 @@ class HomePage extends StatelessWidget {
   final DateTime? lastUpdated;
   final String? error;
   final VoidCallback onOpenMenu;
-
-  String _time(DateTime? value) {
-    if (value == null) return '기록 없음';
-    String two(int number) => number.toString().padLeft(2, '0');
-    return '${two(value.hour)}:${two(value.minute)}:${two(value.second)}';
-  }
+  final DiagnosisResult? diagnosisResult;
+  final VoidCallback? onOpenDiagnosis;
 
   @override
   Widget build(BuildContext context) {
-    final danger = connected && (data?.anyDanger ?? false);
+    final risk = connected
+        ? data?.freezeRisk ?? FreezeRiskLevel.safe
+        : FreezeRiskLevel.safe;
     final sensorError = connected && (data?.anySensorError ?? false);
-    final title = !connected
-        ? '연결 확인 중'
-        : danger
-        ? '주의가 필요해요'
-        : sensorError
-        ? '센서를 확인하세요'
-        : '현재 안전해요';
-    final description = !connected
-        ? 'Supabase에서 최근 측정값을 불러오고 있습니다.'
-        : danger
-        ? '온도가 빠르게 낮아지고 있습니다.'
-        : sensorError
-        ? '일부 센서의 값이 비어 있습니다.'
-        : '동파 위험 신호가 감지되지 않았습니다.';
-    final accent = danger
-        ? const Color(0xFF76554D)
-        : sensorError
-        ? const Color(0xFF746A52)
-        : const Color(0xFF586159);
+    final stale = connected &&
+        !demoMode &&
+        (lastUpdated == null ||
+            DateTime.now().difference(lastUpdated!) >
+                const Duration(seconds: 15));
+    final title = stale
+        ? 'Readings paused'
+        : !connected
+            ? 'Connecting'
+            : risk != FreezeRiskLevel.safe
+                ? risk.label
+                : sensorError
+                    ? 'Check your sensors'
+                    : 'No low-temperature alerts';
+    final description = stale
+        ? 'The latest reading is more than 15 seconds old. Current conditions are unknown.'
+        : !connected
+            ? 'Loading the latest temperature readings.'
+            : risk == FreezeRiskLevel.danger
+                ? 'Temperature alert threshold reached. Check your pipe now.'
+                : risk == FreezeRiskLevel.warning
+                    ? 'Low temperature or rapid cooling detected. Take preventive action.'
+                    : risk == FreezeRiskLevel.caution
+                        ? 'Pipe temperature is falling. Check insulation.'
+                        : sensorError
+                            ? 'Some sensors are not reporting a valid temperature.'
+                            : 'No temperature alert threshold has been triggered.';
+    // Only current, connected readings can color the temperature alert card.
+    final bannerRisk = connected && !stale ? risk : FreezeRiskLevel.safe;
+    final bannerColor = switch (bannerRisk) {
+      FreezeRiskLevel.caution => const Color(0xFFFFDA00),
+      FreezeRiskLevel.warning => const Color(0xFFFF8500),
+      FreezeRiskLevel.danger => const Color(0xFFE21B2D),
+      FreezeRiskLevel.safe => null,
+    };
+    final bannerText = bannerRisk == FreezeRiskLevel.danger
+        ? Colors.white
+        : const Color(0xFF242424);
+    final accent = switch (bannerRisk) {
+      FreezeRiskLevel.caution => const Color(0xFF715500),
+      FreezeRiskLevel.warning => const Color(0xFF663300),
+      FreezeRiskLevel.danger => Colors.white,
+      FreezeRiskLevel.safe =>
+        sensorError ? const Color(0xFF746A52) : const Color(0xFF586159),
+    };
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
       children: [
         Text(
-          '배관 상태',
-          style: Theme.of(context).textTheme.headlineMedium
+          'Pipe status',
+          style: Theme.of(context)
+              .textTheme
+              .headlineMedium
               ?.copyWith(fontWeight: FontWeight.w600, letterSpacing: -1),
         ),
         const SizedBox(height: 8),
         Text(
-          '마지막 측정 ${_time(lastUpdated)}',
+          'Last reading ${displayTime(context, lastUpdated)}',
           style: const TextStyle(color: Color(0xFF777872)),
         ),
         const SizedBox(height: 28),
         Card(
+          key: const ValueKey('temperature-status-card'),
+          color: bannerColor,
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -81,7 +114,8 @@ class HomePage extends StatelessWidget {
                 const SizedBox(height: 24),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
+                    color: bannerColor == null ? null : bannerText,
                     fontSize: 25,
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.8,
@@ -90,7 +124,14 @@ class HomePage extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   description,
-                  style: const TextStyle(color: Color(0xFF696A65), height: 1.5),
+                  style: TextStyle(
+                    color: bannerColor == null
+                        ? const Color(0xFF696A65)
+                        : bannerText,
+                    fontSize: bannerColor == null ? null : 13,
+                    fontWeight: bannerColor == null ? null : FontWeight.w500,
+                    height: bannerColor == null ? 1.5 : 1.65,
+                  ),
                 ),
               ],
             ),
@@ -102,18 +143,24 @@ class HomePage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Column(
               children: [
-                _InfoRow(label: '데이터', value: connected ? '연결됨' : '연결 안 됨'),
+                _InfoRow(
+                    label: 'Data',
+                    value: connected ? 'Connected' : 'Disconnected'),
                 const Divider(height: 1),
                 _InfoRow(
-                  label: '센서',
+                  label: 'Sensors',
                   value: '${connected ? data?.workingCount ?? 0 : 0} / 2',
                 ),
                 const Divider(height: 1),
-                _InfoRow(label: '소스', value: demoMode ? '데모 데이터' : 'Supabase'),
+                _InfoRow(
+                    label: 'Source',
+                    value: demoMode ? 'Demo data' : 'Supabase'),
               ],
             ),
           ),
         ),
+        const SizedBox(height: 14),
+        DiagnosisResultCard(result: diagnosisResult, onOpen: onOpenDiagnosis),
         if (error != null) ...[
           const SizedBox(height: 14),
           Text(
@@ -132,7 +179,7 @@ class HomePage extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
             ),
           ),
-          child: const Text('측정값 자세히 보기'),
+          child: const Text('View readings'),
         ),
       ],
     );
@@ -146,14 +193,15 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 15),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(label, style: const TextStyle(color: Color(0xFF777872))),
+        padding: const EdgeInsets.symmetric(vertical: 15),
+        child: Row(
+          children: [
+            Expanded(
+              child:
+                  Text(label, style: const TextStyle(color: Color(0xFF777872))),
+            ),
+            Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+          ],
         ),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
-      ],
-    ),
-  );
+      );
 }
