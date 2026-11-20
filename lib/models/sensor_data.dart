@@ -13,11 +13,29 @@ enum FreezeRiskLevel {
   danger;
 
   String get label => switch (this) {
-        safe => 'No alert',
-        caution => 'Level 1 · Caution',
-        warning => 'Level 2 · Warning',
-        danger => 'Level 3 · Urgent',
-      };
+    safe => 'No alert',
+    caution => 'Level 1 · Caution',
+    warning => 'Level 2 · Warning',
+    danger => 'Level 3 · Urgent',
+  };
+}
+
+enum DemoRiskScenario {
+  level1,
+  level2,
+  level3;
+
+  String get label => switch (this) {
+    level1 => 'Level 1',
+    level2 => 'Level 2',
+    level3 => 'Level 3',
+  };
+
+  String get description => switch (this) {
+    level1 => 'Caution',
+    level2 => 'Warning',
+    level3 => 'Urgent',
+  };
 }
 
 class SensorData {
@@ -75,8 +93,8 @@ class SensorSnapshot {
 
   FreezeRiskLevel get freezeRisk =>
       sensor1.freezeRisk.index >= sensor2.freezeRisk.index
-          ? sensor1.freezeRisk
-          : sensor2.freezeRisk;
+      ? sensor1.freezeRisk
+      : sensor2.freezeRisk;
 
   bool get anySensorError => !sensor1.ok || !sensor2.ok;
 
@@ -99,8 +117,9 @@ class SensorSnapshot {
         etaMinutes: parseNumber(json['etaMinutes2']),
         danger: json['danger2'] == true,
       ),
-      sequence:
-          json['sequence'] is num ? (json['sequence'] as num).toInt() : null,
+      sequence: json['sequence'] is num
+          ? (json['sequence'] as num).toInt()
+          : null,
       measuredAt: DateTime.tryParse(json['measuredAt']?.toString() ?? ''),
     );
   }

@@ -8,6 +8,15 @@ Open **AI 진단**, select A vulnerable, B vulnerable, indeterminate, or failure
 
 The UI always identifies simulated data. Model scores are examples, not freeze probabilities. The example 0.15 score-gap threshold is unvalidated. No conditional freezing-time model is connected.
 
+## Presentation alert demos
+
+The Monitoring tab includes a separate **Demo scan** for presenting the
+rule-based temperature alerts. Choose Level 1, Level 2, or Level 3 before the
+demo. The simulated readings begin in the safe range and reach the selected
+level in about 12 seconds, so every scenario can be shown in under one minute.
+Changing the selected level restarts the demo curve. This presentation mode
+does not read sensors or change the AI Scan result.
+
 ## Integration handoff
 
 `DiagnosisController` owns the preview state and `DiagnosisResult` owns presentation data. Replace demo methods with the team's acquisition/inference adapter without changing the existing temperature warning path. Future adapter events should carry:

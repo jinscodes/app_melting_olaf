@@ -13,6 +13,8 @@ class MenuPage extends StatelessWidget {
     required this.history1,
     required this.history2,
     required this.onModeChanged,
+    required this.demoScenario,
+    required this.onDemoScenarioChanged,
   });
 
   final bool connected;
@@ -22,6 +24,8 @@ class MenuPage extends StatelessWidget {
   final List<TemperaturePoint> history1;
   final List<TemperaturePoint> history2;
   final ValueChanged<bool> onModeChanged;
+  final DemoRiskScenario demoScenario;
+  final ValueChanged<DemoRiskScenario> onDemoScenarioChanged;
 
   String _temperature(double? value) =>
       value == null ? '--' : '${value.toStringAsFixed(1)}°';
@@ -35,14 +39,14 @@ class MenuPage extends StatelessWidget {
       children: [
         Text(
           'Monitoring',
-          style: Theme.of(context)
-              .textTheme
-              .headlineMedium
+          style: Theme.of(context).textTheme.headlineMedium
               ?.copyWith(fontWeight: FontWeight.w600, letterSpacing: -1),
         ),
         const SizedBox(height: 8),
-        const Text('Recent temperatures and cooling rates',
-            style: TextStyle(color: Color(0xFF777872))),
+        const Text(
+          'Recent temperatures and cooling rates',
+          style: TextStyle(color: Color(0xFF777872)),
+        ),
         const SizedBox(height: 24),
         Row(
           children: [
@@ -81,15 +85,61 @@ class MenuPage extends StatelessWidget {
               horizontal: 18,
               vertical: 4,
             ),
-            title: const Text('Demo data'),
-            subtitle: Text(demoMode
-                ? 'Using simulated readings'
-                : 'Using live sensor readings'),
+            title: const Text('Demo scan'),
+            subtitle: Text(
+              demoMode
+                  ? 'Presentation mode · selected alert in about 12 seconds'
+                  : 'Using live sensor readings',
+            ),
             value: demoMode,
             activeTrackColor: const Color(0xFF7A7D76),
             onChanged: onModeChanged,
           ),
         ),
+        if (demoMode) ...[
+          const SizedBox(height: 14),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Choose demo alert',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Each scenario finishes in under one minute.',
+                    style: TextStyle(color: Color(0xFF777872), fontSize: 12),
+                  ),
+                  const SizedBox(height: 14),
+                  SegmentedButton<DemoRiskScenario>(
+                    segments: [
+                      for (final scenario in DemoRiskScenario.values)
+                        ButtonSegment(
+                          value: scenario,
+                          label: Text(scenario.label),
+                          tooltip:
+                              '${scenario.label} · ${scenario.description}',
+                        ),
+                    ],
+                    selected: {demoScenario},
+                    showSelectedIcon: false,
+                    onSelectionChanged: (selection) =>
+                        onDemoScenarioChanged(selection.first),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '${demoScenario.label} · ${demoScenario.description}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
         if (error != null) ...[
           const SizedBox(height: 12),
           Text(
@@ -139,8 +189,9 @@ class _SensorCard extends StatelessWidget {
                   height: 7,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color:
-                        ok ? const Color(0xFF626A63) : const Color(0xFF8A756F),
+                    color: ok
+                        ? const Color(0xFF626A63)
+                        : const Color(0xFF8A756F),
                   ),
                 ),
               ],

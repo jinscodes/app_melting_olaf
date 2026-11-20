@@ -28,6 +28,7 @@ class _AppShellState extends State<AppShell> {
   int? lastSequence;
 
   bool demoMode = false;
+  DemoRiskScenario demoScenario = DemoRiskScenario.level1;
   bool connected = false;
   bool loading = false;
   FreezeRiskLevel notifiedRisk = FreezeRiskLevel.safe;
@@ -63,10 +64,12 @@ class _AppShellState extends State<AppShell> {
     final currentVersion = modeVersion;
 
     try {
-      final TemperatureBatch? batch =
-          demoMode ? null : await service.fetchLatestData();
-      final SensorSnapshot data =
-          demoMode ? service.createDemoData() : batch!.latest;
+      final TemperatureBatch? batch = demoMode
+          ? null
+          : await service.fetchLatestData();
+      final SensorSnapshot data = demoMode
+          ? service.createDemoData(demoScenario)
+          : batch!.latest;
 
       if (!mounted || currentVersion != modeVersion) {
         return;
@@ -149,22 +152,23 @@ class _AppShellState extends State<AppShell> {
     unawaited(notifications.showRisk(risk));
     final (message, color, icon) = switch (risk) {
       FreezeRiskLevel.caution => (
-          'Caution: Pipe temperature is falling. Check insulation.',
-          const Color(0xFFF2A900),
-          Icons.info_outline,
-        ),
+        'Caution: Pipe temperature is falling. Check insulation.',
+        const Color(0xFFF2A900),
+        Icons.info_outline,
+      ),
       FreezeRiskLevel.warning => (
-          'Warning: Low temperature or rapid cooling detected. Take preventive action.',
-          const Color(0xFFE66A00),
-          Icons.warning_amber_rounded,
-        ),
+        'Warning: Low temperature or rapid cooling detected. Take preventive action.',
+        const Color(0xFFE66A00),
+        Icons.warning_amber_rounded,
+      ),
       FreezeRiskLevel.danger => (
-          'Urgent: Temperature alert threshold reached. Check your pipe now.',
-          const Color(0xFFC62828),
-          Icons.crisis_alert,
-        ),
-      FreezeRiskLevel.safe =>
-        throw StateError('No alarm is needed when no threshold is triggered.'),
+        'Urgent: Temperature alert threshold reached. Check your pipe now.',
+        const Color(0xFFC62828),
+        Icons.crisis_alert,
+      ),
+      FreezeRiskLevel.safe => throw StateError(
+        'No alarm is needed when no threshold is triggered.',
+      ),
     };
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -202,6 +206,22 @@ class _AppShellState extends State<AppShell> {
       service.resetDemo();
     });
 
+    loadData();
+  }
+
+  void changeDemoScenario(DemoRiskScenario scenario) {
+    setState(() {
+      modeVersion++;
+      demoScenario = scenario;
+      connected = false;
+      latest = null;
+      lastUpdated = null;
+      lastSequence = null;
+      notifiedRisk = FreezeRiskLevel.safe;
+      history1.clear();
+      history2.clear();
+      service.resetDemo();
+    });
     loadData();
   }
 
@@ -243,6 +263,8 @@ class _AppShellState extends State<AppShell> {
               history1: history1,
               history2: history2,
               onModeChanged: changeMode,
+              demoScenario: demoScenario,
+              onDemoScenarioChanged: changeDemoScenario,
             ),
             DiagnosisPage(controller: diagnosis),
           ],
